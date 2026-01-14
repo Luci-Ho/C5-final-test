@@ -1,11 +1,11 @@
+// controllers/Teacher.controller.js
 import Teacher from '../models/Teacher.model.js';
-import User from '../models/User.model.js';
-import TeacherPosition from '../models/TeacherPosition.model.js';
-import { generateTeacherCode } from '../utils/generateTeacherCode.js';
 import { createTeacherService } from '../services/teacher.service.js';
+import User from '../models/User.model.js';
+import mongoose from 'mongoose';
+
 /**
  * GET /teachers
- * Pagination
  */
 export const getTeachers = async (req, res) => {
   try {
@@ -46,6 +46,10 @@ export const getTeachers = async (req, res) => {
   }
 };
 
+/**
+ * POST /teachers
+ * Chỉ tạo HỒ SƠ giáo viên cho user đã có role TEACHER
+ */
 export const createTeacher = async (req, res) => {
   try {
     const teacher = await createTeacherService(req.body);
@@ -62,6 +66,9 @@ export const createTeacher = async (req, res) => {
   }
 };
 
+/**
+ * GET /teachers/:id
+ */
 export const getTeacherById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -79,13 +86,12 @@ export const getTeacherById = async (req, res) => {
       });
     }
 
-    const data = {
+    res.json({
       id: teacher._id,
       code: teacher.code,
       isActive: teacher.isActive,
       startDate: teacher.startDate,
       endDate: teacher.endDate,
-
       user: {
         name: teacher.userId?.name,
         email: teacher.userId?.email,
@@ -93,33 +99,40 @@ export const getTeacherById = async (req, res) => {
         address: teacher.userId?.address,
         dob: teacher.userId?.dob
       },
-
       teacherPositions: teacher.teacherPositions,
-
-      degrees: (teacher.degrees || []).map(d => ({
-        type: d.type,
-        school: d.school,
-        major: d.major,
-        year: d.year,
-        isGraduated: d.isGraduated
-      }))
-    };
-
-    res.json(data);
+      degrees: teacher.degrees
+    });
 
   } catch (error) {
-    console.error(error);
-
-    // Lỗi ObjectId không hợp lệ
     if (error.name === 'CastError') {
-      return res.status(400).json({
-        message: 'ID không hợp lệ'
-      });
+      return res.status(400).json({ message: 'ID không hợp lệ' });
     }
 
-    res.status(500).json({
-      message: 'Server error'
-    });
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * GET /teachers/by-position/:positionId
+ */
+export const getTeachersByPosition = async (req, res) => {
+  try {
+    const { positionId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(positionId)) {
+      return res.status(400).json({ message: 'Invalid positionId' });
+    }
+
+    const teachers = await Teacher.find({
+      teacherPositions: new mongoose.Types.ObjectId(positionId),
+      isDeleted: false
+    })
+    .populate('teacherPositions');
+
+    return res.json(teachers);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
 

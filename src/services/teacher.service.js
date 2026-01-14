@@ -5,58 +5,50 @@ import { generateTeacherCode } from '../utils/generateTeacherCode.js';
 
 export const createTeacherService = async (payload) => {
   const {
-    name,
-    email,
-    phoneNumber,
-    address,
-    identity,
-    dob,
-    teacherPositions,
-    degrees,
+    userId,
+    teacherPositions = [],
+    degrees = [],
     startDate,
     endDate
   } = payload;
 
-  // 1. Check email
-  if (await User.exists({ email })) {
-    throw new Error('Email đã tồn tại');
+  // 1. Check user tồn tại
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('User không tồn tại');
   }
 
-  // 2. Check identity
-  if (await User.exists({ identity })) {
-    throw new Error('CMND/CCCD đã tồn tại');
+  // 2. User phải có role TEACHER
+  if (user.role !== 'TEACHER') {
+    throw new Error('User này không phải giáo viên');
   }
 
-  // 3. Validate teacher positions
-  if (teacherPositions?.length) {
+  // 3. Không cho tạo trùng teacher
+  const existed = await Teacher.findOne({ userId, isDeleted: false });
+  if (existed) {
+    throw new Error('Giáo viên đã tồn tại');
+  }
+
+  // 4. Validate teacher positions
+  if (teacherPositions.length > 0) {
     const count = await TeacherPosition.countDocuments({
       _id: { $in: teacherPositions }
     });
+
     if (count !== teacherPositions.length) {
       throw new Error('Vị trí công tác không hợp lệ');
     }
   }
 
-  // 4. Create USER
-  const user = await User.create({
-    name,
-    email,
-    phoneNumber,
-    address,
-    identity,
-    dob,
-    role: 'TEACHER'
-  });
-
-  // 5. Create TEACHER
+  // 5. Tạo teacher
   const teacher = await Teacher.create({
-    userId: user._id,
+    userId,
     code: await generateTeacherCode(Teacher),
-    isActive: true,
+    teacherPositions,
+    degrees,
     startDate,
     endDate,
-    teacherPositions,
-    degrees
+    isActive: true
   });
 
   return teacher;

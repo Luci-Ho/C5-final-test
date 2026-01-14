@@ -2,13 +2,17 @@ import express from 'express';
 import {
   getTeachers,
   createTeacher,
-  getTeacherById
+  getTeacherById,
+  getTeachersByPosition
 } from '../controllers/teacher.controller.js';
 
 const router = express.Router();
 
 router.get('/', getTeachers);
-router.get('/:id', getTeacherById);
 router.post('/', createTeacher);
+
+router.get('/by-position/:positionId', getTeachersByPosition);
+
+router.get('/:id', getTeacherById);
 
 export default router;
