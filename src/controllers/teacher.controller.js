@@ -11,18 +11,21 @@ export const getTeachers = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
 
-    const total = await Teacher.countDocuments({ isDeleted: false });
-
+    // Lấy toàn bộ teachers
     const teachers = await Teacher.find({ isDeleted: false })
       .populate('userId')
       .populate('teacherPositions')
-      .skip(skip)
-      .limit(limit)
       .sort({ createdAt: -1 });
 
-    const data = teachers.map(t => ({
+    const total = teachers.length;
+
+    // Cắt mảng theo page & limit
+    const start = (page - 1) * limit;
+    const end = start + limit;
+    const paginatedTeachers = teachers.slice(start, end);
+
+    const data = paginatedTeachers.map(t => ({
       code: t.code,
       name: t.userId?.name,
       email: t.userId?.email,
@@ -45,6 +48,7 @@ export const getTeachers = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 /**
  * POST /teachers

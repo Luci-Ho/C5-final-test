@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
     identity: {
       type: String,
       unique: true,
-      required: true
+      sparse: true //
     },
 
     dob: {

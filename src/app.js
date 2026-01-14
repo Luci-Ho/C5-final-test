@@ -4,7 +4,7 @@ import cors from 'cors';
 
 import teacherRoutes from './routes/teacher.routes.js';
 import teacherPositionRoutes from './routes/position.routes.js';
-
+import userRoutes from './routes/user.routes.js'
 dotenv.config();
 
 const app = express();
@@ -18,11 +18,7 @@ app.use((req, res, next) => {
   next();
 });
 
-
-app.get('/', (req, res) => {
-  res.send('Teach Management System Backend is running');
-});
-
+app.use('/api/users', userRoutes);
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/teacher-positions', teacherPositionRoutes);
 
